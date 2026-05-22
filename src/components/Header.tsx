@@ -3,7 +3,7 @@ import { useState } from 'react';
 interface HeaderProps {
   onBuild: (url: string) => void;
   isBuilding: boolean;
-  stats: { posts: number; streets: number; maxDepth: number } | null;
+  stats: { files: number; deps: number; vulns: number } | null;
 }
 
 export default function Header({ onBuild, isBuilding, stats }: HeaderProps) {
@@ -17,12 +17,12 @@ export default function Header({ onBuild, isBuilding, stats }: HeaderProps) {
 
   return (
     <div id="header">
-      <div id="logo">Thread<span>City</span></div>
+      <div id="logo">Eco<span>Repo</span></div>
       <div id="input-wrap">
         <input 
           id="url-input" 
           type="text" 
-          placeholder="Paste a Bluesky post URL… e.g. https://bsky.app/profile/user.bsky.social/post/abc123" 
+          placeholder="Enter a GitHub repo… e.g. facebook/react" 
           autoComplete="off" 
           spellCheck="false" 
           value={url}
@@ -33,9 +33,9 @@ export default function Header({ onBuild, isBuilding, stats }: HeaderProps) {
       </div>
       {stats && (
         <div id="stats-bar" style={{ display: 'flex' }}>
-          <span>🏙️ <b>{stats.posts}</b> posts</span>
-          <span>🛣️ <b>{stats.streets}</b> streets</span>
-          <span>🏢 <b>{stats.maxDepth}</b> floors max</span>
+          <span>📄 <b>{stats.files}</b> files</span>
+          <span>🏙️ <b>{stats.deps}</b> deps</span>
+          <span>⚡ <b>{stats.vulns}</b> vulns</span>
         </div>
       )}
     </div>

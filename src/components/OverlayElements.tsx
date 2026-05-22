@@ -1,147 +1,130 @@
-import { useEffect, useRef } from 'react';
-import { Building, City } from '../types';
+import { useState } from 'react';
+import { EcoSystem } from '../types';
 
 interface OverlayProps {
-  hasCity: boolean;
+  hasEco: boolean;
   isLoading: boolean;
   errorMsg: string | null;
-  hoveredBuilding: Building | null;
   onExampleClick?: (url: string) => void;
-  city?: City | null;
+  ecoSystem?: EcoSystem | null;
 }
 
-export default function OverlayElements({ hasCity, isLoading, errorMsg, hoveredBuilding, onExampleClick, city }: OverlayProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export default function OverlayElements({ hasEco, isLoading, errorMsg, onExampleClick, ecoSystem }: OverlayProps) {
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    if (!city || !hasCity || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = 200;
-    canvas.height = 300;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Background
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Find bounds
-    let maxZ = 100;
-    city.buildings.forEach(b => {
-       if (b.y > maxZ) maxZ = b.y;
-    });
-
-    const padding = 20;
-    const scaleZ = (canvas.height - padding * 2) / (maxZ || 1);
-    
-    // Draw road
-    ctx.fillStyle = '#979CAE';
-    ctx.fillRect(canvas.width/2 - 10, 0, 20, canvas.height);
-
-    // Draw buildings
-    city.buildings.forEach(b => {
-      const mapZ = canvas.height - padding - (b.y * scaleZ);
-      // Map X proportionally 
-      const isLeft = b.x < 0;
-      const mapX = isLeft ? canvas.width/2 - 15 - 10 : canvas.width/2 + 15;
-      
-      // Highlight if hovered
-      if (hoveredBuilding && hoveredBuilding.post === b.post) {
-         ctx.fillStyle = '#FFF';
-         ctx.fillRect(mapX - 2, mapZ - 5 - 2, 14, 14);
-      }
-      
-      ctx.fillStyle = b.color;
-      ctx.fillRect(mapX, mapZ - 5, 10, 10);
-      
-      // Draw OP special marker
-      if (b.isOP || b.depth === 0) {
-         ctx.strokeStyle = '#FFF';
-         ctx.lineWidth = 2;
-         ctx.strokeRect(mapX - 1, mapZ - 6, 12, 12);
-      }
-    });
-
-  }, [city, hasCity, hoveredBuilding]);
   return (
     <>
-      <div id="splash" className={hasCity ? 'hidden' : ''}>
-        <div id="splash-title">THREADCITY</div>
-        <div id="splash-sub">Every Thread is a City</div>
-        <div id="splash-hint">↑ PASTE A BLUESKY URL TO BEGIN</div>
+      <div id="splash" className={hasEco ? 'hidden' : ''}>
+        <div id="splash-title">ECOREPO</div>
+        <div id="splash-sub">A Living Geological Map</div>
+        <div id="splash-hint" style={{ fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '20px', color: '#CCC' }}>
+           Volcanoes = Fresh Code<br/>
+           Deep Rock = Old Code<br/>
+           Droughts = Stale Dependencies<br/>
+           Storms = Security Vulnerabilities
+        </div>
+        <div id="splash-hint" style={{ color: 'var(--neon-blue)' }}>↑ ENTER A GITHUB REPO TO BEGIN</div>
         {onExampleClick && (
           <div style={{ marginTop: '30px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', pointerEvents: 'auto' }}>
             <div style={{ marginBottom: '12px', textAlign: 'center', letterSpacing: '1px' }}>OR TRY THESE EXAMPLES:</div>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button 
-                onClick={() => onExampleClick('https://bsky.app/profile/bsky.app/post/3mlvllqtnmk2g')}
+                onClick={() => onExampleClick('facebook/react')}
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'var(--neon-blue)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.2s' }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               >
-                @bsky.app Thread
+                facebook/react
               </button>
               <button 
-                onClick={() => onExampleClick('https://bsky.app/profile/bsky.app/post/3ml7bvrr4yk2l')}
+                onClick={() => onExampleClick('vitejs/vite')}
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'var(--neon-pink)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.2s' }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               >
-                #Breadsky Thread
+                vitejs/vite
               </button>
             </div>
           </div>
         )}
       </div>
 
-      <div id="tooltip" className={hoveredBuilding ? 'visible' : ''} style={{
-        left: '24px', top: 'auto', bottom: '24px', transform: 'none',
-        width: '320px', textAlign: 'center', pointerEvents: 'none'
-      }}>
-        {hoveredBuilding && hoveredBuilding.post && (
-          <>
-            <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, color: 'var(--neon-blue)', marginBottom: '4px' }}>
-              {hoveredBuilding.post.author}
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px' }}>
-              @{hoveredBuilding.post.handle}
-            </div>
-            <div style={{ fontSize: '0.9rem', lineHeight: 1.4, marginBottom: '12px' }}>
-              {hoveredBuilding.post.text.length > 100 
-                ? hoveredBuilding.post.text.slice(0, 100) + '...' 
-                : hoveredBuilding.post.text}
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginBottom: '16px' }}>
-              💬 {hoveredBuilding.post.replies} &nbsp; 🔁 {hoveredBuilding.post.reposts} &nbsp; ❤️ {hoveredBuilding.post.likes}
-            </div>
-            <div style={{ 
-              background: 'rgba(255,255,255,0.1)', border: '1px solid var(--neon-gold)', 
-              color: 'var(--neon-gold)', padding: '6px 12px', borderRadius: '4px',
-              display: 'inline-block', fontSize: '0.8rem', letterSpacing: '1px'
-            }}>
-              [PRESS SPACE TO READ]
-            </div>
-          </>
-        )}
-      </div>
-
-
-
       <div id="loading" className={isLoading ? 'active' : ''}>
         <div className="loader-ring"></div>
-        <div id="loading-text">BUILDING YOUR CITY…</div>
+        <div id="loading-text">SIMULATING CLIMATE & GEOLOGY…</div>
       </div>
 
       <div id="error-msg" className={errorMsg ? 'show' : ''}>
         {errorMsg}
       </div>
 
-      <div id="minimap" style={{ display: hasCity ? 'block' : 'none', position: 'absolute', bottom: 20, right: 20, border: '1px solid var(--glass-border)', borderRadius: 8, overflow: 'hidden' }}>
-        <div style={{background: 'rgba(0,0,0,0.8)', color: 'white', fontSize: '0.7rem', padding: '4px 8px', textAlign: 'center', letterSpacing: 1}}>ROAD MAP</div>
-        <canvas ref={canvasRef} style={{ display: 'block' }}></canvas>
+      {hasEco && ecoSystem && (
+          <>
+          <div id="climate-dash" style={{
+              position: 'absolute', top: 80, left: 20, width: '300px',
+              background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px', padding: '16px', color: '#FFF',
+              fontFamily: 'Syne, sans-serif'
+          }}>
+              <h3 style={{ margin: '0 0 12px 0', color: 'var(--neon-gold)', letterSpacing: '1px' }}>GLOBAL CLIMATE</h3>
+              {ecoSystem.cities.filter(c => c.dependency.vulnerabilityCount > 0).length > 0 ? (
+                  <div style={{ color: 'var(--neon-pink)', marginBottom: '8px' }}>
+                      ⚠️ {ecoSystem.cities.filter(c => c.dependency.vulnerabilityCount > 0).length} cities experiencing Storms
+                  </div>
+              ) : (
+                  <div style={{ color: '#4ECDC4', marginBottom: '8px' }}>
+                      ☀️ No active Storms detected
+                  </div>
+              )}
+              {ecoSystem.cities.filter(c => c.dependency.stalenessDays > 180).length > 0 ? (
+                  <div style={{ color: '#FFD700', marginBottom: '8px' }}>
+                      🏜️ {ecoSystem.cities.filter(c => c.dependency.stalenessDays > 180).length} cities in Severe Drought
+                  </div>
+              ) : (
+                  <div style={{ color: '#4ECDC4', marginBottom: '8px' }}>
+                      💧 Ecosystem is well-hydrated
+                  </div>
+              )}
+          </div>
+          
+          <div id="legend-dash" style={{
+              position: 'absolute', bottom: 20, left: 20, width: '300px',
+              background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px', padding: '16px', color: '#FFF',
+              fontFamily: 'Syne, sans-serif'
+          }}>
+              <h3 style={{ margin: '0 0 12px 0', color: '#4ECDC4', letterSpacing: '1px' }}>TERRAIN LEGEND</h3>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ width: 12, height: 12, background: '#FF4500', marginRight: 10, borderRadius: 2 }}></div>
+                  <span style={{ fontSize: '0.9rem' }}>Volcanic (Fresh Code &lt; 30d)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ width: 12, height: 12, background: '#8B4513', marginRight: 10, borderRadius: 2 }}></div>
+                  <span style={{ fontSize: '0.9rem' }}>Sedimentary (Older Code)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ width: 12, height: 12, background: '#A9A9A9', marginRight: 10, borderRadius: 2 }}></div>
+                  <span style={{ fontSize: '0.9rem' }}>Fossil (Dead/Ancient Code)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: '16px', marginBottom: '8px' }}>
+                  <div style={{ width: 12, height: 12, background: '#2E8B57', marginRight: 10, borderRadius: 10 }}></div>
+                  <span style={{ fontSize: '0.9rem' }}>Dependency City (NPM)</span>
+              </div>
+          </div>
+          </>
+      )}
+
+      <div id="search-bar" style={{ display: hasEco ? 'block' : 'none', position: 'absolute', top: 80, right: 20, zIndex: 10, pointerEvents: 'auto', width: '250px' }}>
+        <input 
+          type="text" 
+          placeholder="Search files to teleport..." 
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+          }}
+          style={{
+            background: 'rgba(0,0,0,0.5)', border: '1px solid var(--neon-blue)', color: '#FFF', 
+            padding: '8px 16px', borderRadius: '4px', width: '100%', outline: 'none',
+            fontFamily: 'inherit', fontSize: '0.9rem', boxSizing: 'border-box'
+          }}
+        />
+        {/* Teleport functionality is removed here since we don't track canvas coords easily, but could be restored later */}
       </div>
     </>
   );

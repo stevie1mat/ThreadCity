@@ -1,49 +1,48 @@
 import { useState } from 'react';
 import BackgroundStars from './components/BackgroundStars';
 import Header from './components/Header';
-import CityCanvas from './components/CityCanvas';
+import EcoCanvas from './components/EcoCanvas';
 import OverlayElements from './components/OverlayElements';
-import PostReaderModal from './components/PostReaderModal';
-import { fetchThread, parseThread } from './services/bluesky';
-import { buildCity } from './utils/cityBuilder';
-import { City, Building, Post } from './types';
+import FileReaderModal from './components/FileReaderModal';
+import { fetchEcoData } from './services/github';
+import { buildEcoSystem } from './utils/ecoBuilder';
+import { EcoSystem, FossilNode } from './types';
 
 export default function App() {
-  const [city, setCity] = useState<City | null>(null);
+  const [ecoSystem, setEcoSystem] = useState<EcoSystem | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [stats, setStats] = useState<{ posts: number; streets: number; maxDepth: number } | null>(null);
-  const [hoveredBuilding, setHoveredBuilding] = useState<Building | null>(null);
-  const [readingPost, setReadingPost] = useState<Post | null>(null);
+  const [stats, setStats] = useState<{ files: number; deps: number; vulns: number } | null>(null);
+  const [readingNode, setReadingNode] = useState<FossilNode | null>(null);
 
   const showError = (msg: string) => {
     setErrorMsg(msg);
     setTimeout(() => setErrorMsg(null), 4000);
   };
 
-  const handleBuildCity = async (url: string) => {
+  const handleBuildEco = async (url: string) => {
     setIsBuilding(true);
-    setCity(null);
-    setHoveredBuilding(null);
+    setEcoSystem(null);
     setErrorMsg(null);
 
     try {
-      const thread = await fetchThread(url);
-      const tree = parseThread(thread);
-      if (!tree) throw new Error('Could not parse thread structure.');
+      const data = await fetchEcoData(url);
+      if (!data || !data.rootNode) throw new Error('Could not parse repository structure.');
 
-      const builtCity = buildCity(tree);
-      setCity(builtCity);
+      const builtSystem = buildEcoSystem(data.rootNode, data.cities);
+      setEcoSystem(builtSystem);
 
-      const countPosts = (node: Post): number => 1 + (node.children || []).reduce((s: number, c: Post) => s + countPosts(c), 0);
-      const totalPosts = countPosts(tree);
-      const maxDepth = builtCity.buildings.reduce((m, b) => Math.max(m, b.floors), 0);
+      let files = 0;
+      const countNodes = (node: FossilNode) => {
+        if (node.type !== 'tree') files++;
+        (node.children || []).forEach(countNodes);
+      };
+      countNodes(data.rootNode);
 
-      setStats({
-        posts: totalPosts,
-        streets: builtCity.streets.length,
-        maxDepth
-      });
+      const deps = data.cities.length;
+      const vulns = data.cities.reduce((sum, c) => sum + c.vulnerabilityCount, 0);
+
+      setStats({ files, deps, vulns });
 
     } catch (err: any) {
       showError(err.message || 'An error occurred.');
@@ -52,24 +51,19 @@ export default function App() {
     }
   };
 
-  const handleHover = (building: Building | null) => {
-    setHoveredBuilding(building);
-  };
-
   return (
     <>
       <BackgroundStars />
-      <Header onBuild={handleBuildCity} isBuilding={isBuilding} stats={stats} />
-      <CityCanvas city={city} onHover={handleHover} onReadPost={setReadingPost} isReading={!!readingPost} />
+      <Header onBuild={handleBuildEco} isBuilding={isBuilding} stats={stats} />
+      <EcoCanvas ecoSystem={ecoSystem} onReadNode={setReadingNode} isReading={!!readingNode} />
       <OverlayElements 
-        hasCity={!!city} 
+        hasEco={!!ecoSystem} 
         isLoading={isBuilding} 
         errorMsg={errorMsg} 
-        hoveredBuilding={hoveredBuilding} 
-        onExampleClick={handleBuildCity}
-        city={city}
+        onExampleClick={handleBuildEco}
+        ecoSystem={ecoSystem}
       />
-      <PostReaderModal post={readingPost} onClose={() => setReadingPost(null)} />
+      <FileReaderModal node={readingNode as any} onClose={() => setReadingNode(null)} />
     </>
   );
 }
